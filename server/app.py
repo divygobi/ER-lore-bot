@@ -1,13 +1,12 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 from dotenv import load_dotenv
 from pinecone import Pinecone, ServerlessSpec
-from flask_cors import CORS
 import google.generativeai as genai
 import os
 
 
+
 app = Flask(__name__)
-CORS(app)
 load_dotenv(dotenv_path="/Users/divygobiraj/Desktop/projects/ER_Lore_Bot/ER-lore-bot/.env")
 # print(os.getenv("PINECONE_KEY"))
 
@@ -59,7 +58,3 @@ def generate_text(prompt):
 def test_generate():
     result = generate_text("Who broke the Elden ring?")
     return jsonify(result)
-
-@app.route("/test/meow", methods=["POST"])
-def test():
-    return jsonify({"message": "meow"}), 200
