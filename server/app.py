@@ -2,6 +2,8 @@ from flask import Flask, jsonify
 from dotenv import load_dotenv
 from pinecone import Pinecone, ServerlessSpec
 import google.generativeai as genai
+from pymongo import MongoClient
+
 import os
 
 
@@ -14,6 +16,58 @@ pc = Pinecone(api_key=os.getenv("PINECONE_KEY"))
 index = pc.Index("er-text")
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 model = genai.GenerativeModel("gemini-1.5-flash")
+mongoClient = MongoClient(connect=False)
+uri = os.getenv('MONGO_URI')
+client = MongoClient(uri,
+                             tls=True,
+                             tlsAllowInvalidCertificates=True)
+
+
+database = client.get_database("EldenRing")
+textDB = database.get_collection("er-text")
+
+
+
+
+
+
+
+def generate_text(prompt):
+    query = "Who broke the Elden ring?"
+    print("YOUR prompt is: " + prompt)
+
+    embedding = pc.inference.embed(
+        model="multilingual-e5-large",
+        inputs=[prompt],
+        parameters={
+            "input_type": "query"
+        }
+    )
+    if len(embedding) == 0:
+        return jsonify(message="No embeddings found"), 404
+    
+    results = index.query(
+        vector=embedding[0].values,
+        top_k=3,
+        include_values=False,
+        include_metadata=True
+    )
+    
+    documents = []
+    for result in results['matches']:
+        doc = textDB.find_one({"name": result["id"]})
+        if doc:
+            documents.append(doc['text'])
+    print("Documents: \n", documents)
+    return documents
+
+
+
+### test endpoints
+@app.route("/test/pingdb")
+def test_db():
+    textDB.find_one({"test": "test"})
+    return jsonify(message="Inserted!"), 200
 
 
 @app.route("/")
@@ -34,27 +88,24 @@ def test_pinecone():
     return jsonify(message="Upserted!"), 200
 
 
-def generate_text(prompt):
-    query = "Who broke the Elden ring?"
-
-    embedding = pc.inference.embed(
-        model="multilingual-e5-large",
-        inputs=[prompt],
-        parameters={
-            "input_type": "query"
-        }
-    )
-    
-    results = index.query(
-        vector=embedding[0].values,
-        top_k=3,
-        include_values=False,
-        include_metadata=True
-    )
-
-    return results
-
-@app.route("/test/generate")
+@app.route("/test/retrieve")
 def test_generate():
-    result = generate_text("Who broke the Elden ring?")
-    return jsonify(result)
+    docs = generate_text("Who broke the Elden ring?")
+
+    try:
+        return jsonify(docs), 200
+    except Exception as e:
+        return jsonify(message="Error with retrieving text from", error=str(e)), 500
+
+@app.route("/test/geneneratext")
+def test_generate_text():
+    query = "Who broke the Elden ring?"
+    print("YOUR prompt is: " + query)
+    try:
+        response = model.generate_content(query)
+        
+        return jsonify(response), 200
+    except Exception as e:
+        return jsonify(message="Error with generating text from gemini", error=str(e)), 500
+
+
