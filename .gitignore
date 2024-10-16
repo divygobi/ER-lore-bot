@@ -1,2 +1,3 @@
 data_processing/data/*
 .env
+server/__pycache__/*
