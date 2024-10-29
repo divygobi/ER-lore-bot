@@ -1,15 +1,25 @@
-import { streamText, convertToCoreMessages } from "ai";
+import { streamText, convertToCoreMessages, LoadAPIKeyError } from "ai";
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+const dotenv = require('dotenv');
+
+dotenv.config({ path: '/Users/divygobiraj/Desktop/projects/ER_Lore_Bot/ER-lore-bot/.env' });
+
+
+const google = createGoogleGenerativeAI(
+  {apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+  headers: {}}
+);
+
 
 export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const result = await streamText({
-    model: genAI.getGenerativeModel({ model: "gemini-1.5-flash" }),
+    model: google('gemini-1.5-flash'),
     messages: convertToCoreMessages(messages),
   });
 

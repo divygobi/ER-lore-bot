@@ -111,7 +111,7 @@ export default function Home() {
   return (
     <main className="flex h-screen w-full max-w-3xl flex-col items-center mx-auto py-6">
       <ChatMessageList ref={messagesRef}>
-        {/* Initial Message */}
+        {/* Welcome message */}
         {messages.length === 0 && (
           <div className="w-full bg-background shadow-sm border rounded-lg p-8 flex flex-col gap-2">
             <h1 className="font-bold">Welcome to this lore bot</h1>
@@ -128,10 +128,6 @@ export default function Home() {
               key={index}
               variant={message.role == "user" ? "sent" : "received"}
             >
-              <ChatBubbleAvatar
-                src=""
-                fallback={message.role == "user" ? "👨🏽" : "🤖"}
-              />
               <ChatBubbleMessage
               >
                 {message.content
@@ -182,11 +178,11 @@ export default function Home() {
         {/* Loading */}
         {isGenerating && (
           <ChatBubble variant="received">
-            <ChatBubbleAvatar src="" fallback="🤖" />
             <ChatBubbleMessage isLoading />
           </ChatBubble>
         )}
       </ChatMessageList>
+
       <div className="w-full px-4">
         <form
           ref={formRef}
