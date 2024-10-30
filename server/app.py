@@ -1,4 +1,5 @@
 from flask import Flask, jsonify
+from flask import request
 from dotenv import load_dotenv
 from pinecone import Pinecone, ServerlessSpec
 import google.generativeai as genai
@@ -54,12 +55,38 @@ def generate_text(prompt):
     )
     
     documents = []
+    foundDocs = set()
     for result in results['matches']:
-        doc = textDB.find_one({"name": result["id"]})
-        if doc:
-            documents.append(doc['text'])
+        docName = result["id"]
+        docName = ''.join(e for e in docName if not e.isdigit())
+        #Documents are chunked so we need to search with wildcard
+        docs = textDB.find({"name": {"$regex": docName }})
+        fullDoc = ""
+        for doc in docs:
+            fullDoc += doc['text']
+            fullDoc += " "
+
+        if docName not in foundDocs and fullDoc != "":
+            foundDocs.add(docName)
+            documents.append({
+                "name": docName,
+                "text": fullDoc
+            })
+
+
     print("Documents: \n", documents)
     return documents
+
+
+### real endpoints
+@app.route("/generate", methods=["POST"])
+def generate():
+    try:
+        prompt = request.form['prompt']
+        docs = generate_text(prompt)
+        return jsonify(docs), 200
+    except Exception as e:
+        return jsonify(message="Error with retrieving text from", error=str(e)), 500
 
 
 
@@ -107,5 +134,6 @@ def test_generate_text():
         return jsonify(response), 200
     except Exception as e:
         return jsonify(message="Error with generating text from gemini", error=str(e)), 500
+
 
 
