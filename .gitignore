@@ -1,0 +1,4 @@
+data_processing/data/*
+.env
+server/__pycache__/*
+client/erlorebot/node_modules/*
